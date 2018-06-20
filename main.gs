@@ -2,14 +2,14 @@
 //SLACK_INCOMMING_URL: your slack incomming webhook's url
 
 function doPost(e) {
-  //<商品名>　<価格> <image url>
+  //<商品名> <価格> <在庫数> <image url> <option_master>
   var input = (e.parameter.text).split(" ");
   var reply_text = "";
-  if (input.length == 3) {
-    sendMsgWithButton(input[0], input[1], input[2], e.parameter.user_id, e.parameter.user_name);
+  if (input.length == 4) {
+    sendMsgWithButton(input[0], input[1], input[2], input[3], e.parameter.user_id, e.parameter.user_name);
     reply_text = "商品の追加に成功いたしました"
-  } else if ((input.length == 4) && (input[3] == "master")) {
-    sendMsgWithButton(input[0], input[1], input[2], "master", "master");
+  } else if ((input.length == 5) && (input[4] == "master")) {
+    sendMsgWithButton(input[0], input[1], input[2], input[3], "master", "master");
     reply_text = "商品の追加に成功いたしました(master mode)"
   } else {
     reply_text = "何らかのエラーが発生しました"
@@ -20,14 +20,23 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function sendMsgWithButton(product_name, price, url, user_id, user_name) {
+function sendMsgWithButton(product_name, price, num, url, user_id, user_name) {
   // slack channel url (where to send the message)
   var slackUrl = PropertiesService.getScriptProperties().getProperty('SLACK_INCOMMING_URL');
   // message text  
   var messageData = {
     "attachments": [{
       "title": product_name,
-      "text":"by "+user_name,
+      "fields": [{
+          "title": "在庫数",
+          "value": num,
+          "short": true
+        },{
+          "title": "出品者",
+          "value": user_name,
+          "short": true
+        }
+      ],
       "fallback": "Sorry, no support for buttons.",
       "callback_id": "ButtonResponse",
       "color": "#3AA3E3",
@@ -37,15 +46,12 @@ function sendMsgWithButton(product_name, price, url, user_id, user_name) {
           "text": price + "円",
           "type": "button",
           "value": price + "," + user_id
+        },{
+          "name": "cancel",
+          "text": "キャンセル",
+          "type": "button",
+          "value": price + "."+user_id
         }
-        /**キャンセルボタンなんていりませんよね？
-        ,{
-              "name": "cancel",
-              "text": "キャンセル",
-              "type": "button",
-              "value": price
-        }
-        **/
       ],
       "image_url": url
     }]
